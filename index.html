@@ -1,0 +1,3139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Label Generator</title>
+    <style>
+      body {
+        font-family: Verdana, sans-serif;
+        margin: 0;
+        padding: 10px;
+        background-color: #f9f9f9;
+        font-size: 10px;
+      }
+      .container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        font-size: 10px;
+      }
+      .container input[type="file"] {
+        margin-right: 10px;
+        font-size: 10px;
+      }
+      .container button {
+        padding: 10px 20px;
+        color: #ffffff;
+        background-color: #007bff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 10px;
+      }
+      .container button:hover {
+        background-color: #0056b3;
+        font-size: 10px;
+      }
+      .labels-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 17px;
+      }
+      .label-container {
+        position: relative;
+        width: 65mm;
+        height: 92mm;
+        border: 1px solid black;
+        padding: 20px;
+        box-sizing: border-box;
+        background-color: #ffffff;
+        font-size: 10px;
+      }
+      .page {
+        width: 69mm;
+        height: 92mm;
+        page-break-before: always;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        background-color: #ffffff;
+        border: none;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid black;
+        padding-bottom: 15px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        font-family: "Roboto", sans-serif;
+      }
+      .header div:first-child {
+        flex: 1;
+      }
+      .label-counter {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        font-size: 10px;
+        color: #000;
+        background-color: #fff;
+        padding: 2px 2px;
+        border: 1px solid #000;
+        border-radius: 3px;
+        font-size: 10px;
+        page-break-inside: avoid;
+      }
+      .section {
+        border-bottom: 1px solid lightgray;
+        padding: 5px 0;
+        font-size: 10px;
+      }
+      .section div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 10px;
+      }
+      .info-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+        font-size: 10px;
+      }
+      .info-table td,
+      .info-table th {
+        border: 1px solid black;
+        padding: 5px;
+        text-align: left;
+        font-size: 10px;
+      }
+      .info-table th {
+        background-color: #fff;
+      }
+      .footer {
+        position: absolute;
+        bottom: 10px;
+        left: 15px;
+        font-size: 12px;
+        width: calc(100% - 30px);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        font-family: "Roboto", sans-serif;
+      }
+      .qr-code {
+        width: 80px;
+        height: 80px;
+        border: 1px black;
+        display: inline-block;
+        font-size: 10px;
+      }
+      .info-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid lightgray;
+        padding: 5px 0;
+        margin: 5px 0;
+        font-size: 10px;
+      }
+      .csv-table-container {
+        margin-top: 20px;
+        font-size: 10px;
+      }
+      #csv-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+      #csv-table th,
+      #csv-table td {
+        border: 1px solid black;
+        padding: 5px;
+        text-align: left;
+        font-size: 10px;
+      }
+      #csv-table th {
+        background-color: #f2f2f2;
+        font-size: 10px;
+      }
+      .tall-row td {
+        padding-top: 7px;
+        padding-bottom: 7px;
+        height: 15px;
+      }
+
+      @media print {
+        .container,
+        .csv-table-container {
+          display: none;
+        }
+        .labels-container {
+          display: flex;
+          margin: 0;
+        }
+        .page {
+          width: 80mm;
+          height: 96mm;
+          page-break-after: always;
+          margin: 0 0 10mm 0;
+          padding: 0;
+          box-sizing: border-box;
+          background-color: #ffffff;
+        }
+        .label {
+          margin-bottom: 1mm;
+        }
+        @page {
+          margin: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <input type="file" id="csv-file" accept=".csv,.xlsx" multiple />
+      <button onclick="refreshPage()">Refresh</button>
+      <button onclick="generatePDF()">Generate PDF</button>
+      <button onclick="generateDI()">Generate DI</button>
+      <button onclick="generatePrint()">Generate Print</button>
+    </div>
+
+    <div class="csv-table-container">
+      <table id="csv-table" class="info-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Part Number</th>
+            <th>Part Name</th>
+            <th>DI Number</th>
+            <th>Quantity/Pack</th>
+            <th>Purchase Number</th>
+            <th>Delivery Date</th>
+            <th>Supplier</th>
+            <th>Cycle</th>
+            <th>Warehouse</th>
+            <th>Bin</th>
+            <th>Bins</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="labels-container" class="labels-container"></div>
+
+    <!-- Library Tambahan untuk XLSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+    <script>
+      const packingDatabase = {
+        MB357513V: {
+          qtyPack: 120,
+          packingType: "Pallet P22",
+        },
+        MB385325V: {
+          qtyPack: 120,
+          packingType: "Pallet P22",
+        },
+        MB385329DV: {
+          qtyPack: 120,
+          packingType: "Pallet P22",
+        },
+        "6710A407V": {
+          qtyPack: 30,
+          packingType: "Pallet Spesial",
+        },
+        "6710A408V": {
+          qtyPack: 30,
+          packingType: "Pallet Spesial",
+        },
+        "6710A409V": {
+          qtyPack: 30,
+          packingType: "Pallet Spesial",
+        },
+        "6710A410V": {
+          qtyPack: 30,
+          packingType: "Pallet Spesial",
+        },
+
+        "51111-BZ040-SP": {
+          qtyPack: 240,
+          packingType: "Pallet A",
+        },
+        "51121-BZ040": {
+          qtyPack: 240,
+          packingType: "Pallet A",
+        },
+        "51112-BZ020-SP": {
+          qtyPack: 240,
+          packingType: "Pallet A",
+        },
+        "51122-BZ020": {
+          qtyPack: 240,
+          packingType: "Pallet A",
+        },
+        "71327-BZ010": {
+          qtyPack: 100,
+          packingType: "Pallet A",
+        },
+        "61771-BZ150-BL": {
+          qtyPack: 600,
+          packingType: "Pallet A",
+        },
+        "58313-DZ060-BL": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "58314-BZ060-BL": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "74322W000P": {
+          qtyPack: 150,
+          packingType: "Pallet Spesial",
+        },
+        "75675B000P": {
+          qtyPack: 144,
+          packingType: "DAWSON 05",
+        },
+        "75674B000P": {
+          qtyPack: 144,
+          packingType: "DAWSON 05",
+        },
+        "75677B010P": {
+          qtyPack: 60,
+          packingType: "Pollybox 6033",
+        },
+        "75676B010P": {
+          qtyPack: 60,
+          packingType: "Pollybox 6033",
+        },
+        "75637B000P": {
+          qtyPack: 72,
+          packingType: "Pollybox 6033",
+        },
+        "75636B000P": {
+          qtyPack: 72,
+          packingType: "Pollybox 6033",
+        },
+        "75522B060P-CO": {
+          qtyPack: 108,
+          packingType: "DAWSON 05",
+        },
+        "75520B010P": {
+          qtyPack: 108,
+          packingType: "DAWSON 05",
+        },
+        "75523B060P": {
+          qtyPack: 108,
+          packingType: "DAWSON 05",
+        },
+        "75521B010P": {
+          qtyPack: 108,
+          packingType: "DAWSON 05",
+        },
+        "748C1B000P": {
+          qtyPack: 58,
+          packingType: "Pollybox 6033",
+        },
+        "76714B010P": {
+          qtyPack: 240,
+          packingType: "DAWSON 05",
+        },
+        "76697B000P": {
+          qtyPack: 120,
+          packingType: "Pollybox 6644",
+        },
+        "76696B000P": {
+          qtyPack: 120,
+          packingType: "Pollybox 6644",
+        },
+        "73235B010P": {
+          qtyPack: 36,
+          packingType: "Pollybox 6033",
+        },
+        "73234B010P": {
+          qtyPack: 36,
+          packingType: "Pollybox 6033",
+        },
+        "76321B040P": {
+          qtyPack: 60,
+          packingType: "Pollybox 6644",
+        },
+        "76320B040P": {
+          qtyPack: 60,
+          packingType: "Pollybox 6644",
+        },
+        "767A6B020P": {
+          qtyPack: 120,
+          packingType: "Pollybox 6644",
+        },
+        "767A6B010P": {
+          qtyPack: 120,
+          packingType: "Pollybox 6644",
+        },
+        "748C0B000P": {
+          qtyPack: 58,
+          packingType: "Pollybox 6033",
+        },
+        "17406B000P-02-AN": {
+          qtyPack: 240,
+          packingType: "Pollybox 6033",
+        },
+        "17296B000P": {
+          qtyPack: 120,
+          packingType: "Pallet Spesial",
+        },
+        "33228-61J20-000": {
+          qtyPack: 24,
+          packingType: "Box Spesial",
+        },
+        "33228-61J30-000": {
+          qtyPack: 148,
+          packingType: "Box Spesial",
+        },
+        "5220L701": {
+          qtyPack: 60,
+          packingType: "Pollybox 6033",
+        },
+        "5220L701.": {
+          qtyPack: 60,
+          packingType: "Pollybox 6033",
+        },
+        "5220L701_": {
+          qtyPack: 60,
+          packingType: "Pollybox 6033",
+        },
+        "5230H106-AP": {
+          qtyPack: 10,
+          packingType: "Box Spesial",
+        },
+        "88152-73RA0-000-AP": {
+          qtyPack: 81,
+          packingType: "Pollybox 6033",
+        },
+        "88155-73RA0-000-AP": {
+          qtyPack: 81,
+          packingType: "Pollybox 6033",
+        },
+        "5360A359-AP": {
+          qtyPack: 120,
+          packingType: "Pallet A",
+        },
+        "1530A303": {
+          qtyPack: 30,
+          packingType: "Pollybox 6033",
+        },
+        "1530A305": {
+          qtyPack: 30,
+          packingType: "Pollybox 6033",
+        },
+        "5273A077": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "5253AH18": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "5253AS82": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "5251D673": {
+          qtyPack: 150,
+          packingType: "Pollybox 6033",
+        },
+        "5257A778": {
+          qtyPack: 100,
+          packingType: "Pollybox 6033",
+        },
+        "5251G123": {
+          qtyPack: 320,
+          packingType: "Pollybox 6033",
+        },
+        "8558C793": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "5220AC43": {
+          qtyPack: 75,
+          packingType: "Pollybox 6033",
+        },
+        "8558C873": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "62134-3M0-3000": {
+          qtyPack: 147,
+          packingType: "Pollybox 6033",
+        },
+        "62138-3M0-J000-H1": {
+          qtyPack: 50,
+          packingType: "Pollybox 6033",
+        },
+        "62178-3M0-J000-H1": {
+          qtyPack: 50,
+          packingType: "Pollybox 6033",
+        },
+        "71254-3M0-3000": {
+          qtyPack: 90,
+          packingType: "Pollybox 6033",
+        },
+        "71259-3M0-3000": {
+          qtyPack: 90,
+          packingType: "Pollybox 6033",
+        },
+        "62123-3K6-K000-H1": {
+          qtyPack: 30,
+          packingType: "Pollybox 6033",
+        },
+        "65512-TSV-K000-H1": {
+          qtyPack: 60,
+          packingType: "Pollybox 6033",
+        },
+        "65562-TSV-K000-H2": {
+          qtyPack: 60,
+          packingType: "Pollybox 6033",
+        },
+        "65517-3K6-K000-H1": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "65518-3K6-K000-H1": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "64824W040P_": {
+          qtyPack: 320,
+          packingType: "Pollybox 6033",
+        },
+        "74560W000P": {
+          qtyPack: 96,
+          packingType: "Pollybox 6033",
+        },
+        "65519-3K6-K000-H1": {
+          qtyPack: 300,
+          packingType: "Pollybox 6033",
+        },
+        "62132-TF0-3000": {
+          qtyPack: 152,
+          packingType: "Polybox 332",
+        },
+        "62135-T9A-T000-H1": {
+          qtyPack: 264,
+          packingType: "Polybox 332",
+        },
+        "62122-T9A-T000-H1": {
+          qtyPack: 248,
+          packingType: "Polybox 332",
+        },
+        "62125-T7A-3000": {
+          qtyPack: 248,
+          packingType: "Polybox 332",
+        },
+        "65193-TE7-K000-H1": {
+          qtyPack: 60,
+          packingType: "Polybox 332",
+        },
+        "65118-TG2-K000-50": {
+          qtyPack: 101,
+          packingType: "Polybox 332",
+        },
+        "65168-TSEY-X000-50": {
+          qtyPack: 101,
+          packingType: "Polybox 332",
+        },
+        "65719-TG1-T000-H1": {
+          qtyPack: 176,
+          packingType: "Polybox 332",
+        },
+        "65769-TG1-T000-H1": {
+          qtyPack: 176,
+          packingType: "Polybox 332",
+        },
+        "65192-TG4-T000-H1": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "62122-TE7-K000-50": {
+          qtyPack: 76,
+          packingType: "Polybox 332",
+        },
+        "65752-TG1-T000-H1": {
+          qtyPack: 59,
+          packingType: "Polybox 332",
+        },
+        "65156-T86-K001-H1": {
+          qtyPack: 100,
+          packingType: "Polybox 332",
+        },
+        "62127-3M0-J000-H1": {
+          qtyPack: 88,
+          packingType: "Polybox 332",
+        },
+        "62527-3M0-J000-H1": {
+          qtyPack: 88,
+          packingType: "Polybox 332",
+        },
+        "62133-3M0-3000": {
+          qtyPack: 29,
+          packingType: "Polybox 332",
+        },
+        "62173-3M0-3000": {
+          qtyPack: 44,
+          packingType: "Polybox 332",
+        },
+        "62152-3N1-T000-H1": {
+          qtyPack: 54,
+          packingType: "Polybox 332",
+        },
+        "17528-TSEY-K000": {
+          qtyPack: 324,
+          packingType: "Polybox 332",
+        },
+        "17528-TE7-K000-H1": {
+          qtyPack: 324,
+          packingType: "Polybox 332",
+        },
+        "17528-T5S-T000-H1": {
+          qtyPack: 250,
+          packingType: "Polybox 332",
+        },
+        "17529-T5S-T000-H1": {
+          qtyPack: 250,
+          packingType: "Polybox 332",
+        },
+        "65169-TSEY-X000-H1": {
+          qtyPack: 404,
+          packingType: "Polybox 332",
+        },
+        "65731-TG4-T000-50": {
+          qtyPack: 88,
+          packingType: "Polybox 332",
+        },
+        "63912-TSV-K000-50": {
+          qtyPack: 192,
+          packingType: "Polybox 332",
+        },
+        "63912-TG1-T000-50": {
+          qtyPack: 176,
+          packingType: "Polybox 332",
+        },
+        "65721-TG4-T000-H1": {
+          qtyPack: 88,
+          packingType: "Polybox 332",
+        },
+        "65771-TG4-T000-H1": {
+          qtyPack: 88,
+          packingType: "Polybox 332",
+        },
+        "65723-TG4-T000-H1": {
+          qtyPack: 88,
+          packingType: "Polybox 332",
+        },
+        "65773-TG4-T000-H1": {
+          qtyPack: 88,
+          packingType: "Polybox 332",
+        },
+        "65613-SCD-3000": {
+          qtyPack: 60,
+          packingType: "Polybox 332",
+        },
+        "63914-TRD-T000-H1": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "65727-TF0-3000": {
+          qtyPack: 176,
+          packingType: "Polybox 332",
+        },
+        "65777-TF0-3000": {
+          qtyPack: 176,
+          packingType: "Polybox 332",
+        },
+        "62151-3M0-3000": {
+          qtyPack: 54,
+          packingType: "Polybox 6699",
+        },
+        "64314-TG4-T000-50": {
+          qtyPack: 192,
+          packingType: "Polybox 332",
+        },
+        "63912-TG1-T000-51": {
+          qtyPack: 176,
+          packingType: "Polybox 332",
+        },
+        "65157-T86-K002-H1": {
+          qtyPack: 200,
+          packingType: "Polybox 332",
+        },
+        "65158-T86-K002-H1": {
+          qtyPack: 200,
+          packingType: "Polybox 332",
+        },
+        "65147-T86-K000-50": {
+          qtyPack: 152,
+          packingType: "Polybox 332",
+        },
+        "65197-T86-K000-50": {
+          qtyPack: 152,
+          packingType: "Polybox 332",
+        },
+        "68124-3M0-J000-H1": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "62133-T8N-T000-50": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "63914-TG4-T000-50": {
+          qtyPack: 120,
+          packingType: "Polybox 332",
+        },
+        "65743-TG1-T000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "63915-TSA-K000-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "68124-3M0-J000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65117-TG2-K000-H1-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65167-TG2-K000-H1-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65712-TG4-T000-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65767-TG4-T000-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "63915-TG4-T000-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "62131-TG4-T001-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65722-TG4-T000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65799-TG4-T000-H1-BL": {
+          qtyPack: 0,
+          packingType: "Pallet Blank",
+        },
+        "68126-3M0-J000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65142-T86-K001-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65151-TSV-K001-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65753-TG4-T000-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65754-TG4-T000-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65703-TG2-K000-H1-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65704-TG2-K000-H1-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65512-T86-X000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65562-T86-X000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65211-T86-K000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65261-T86-K000-H1-BL": {
+          qtyPack: 0,
+          packingType: "Pallet Blank",
+        },
+        "65751-T86-X000-50-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65192-T86-X000-H1-BL": {
+          qtyPack: 0,
+          packingType: "Pallet Blank",
+        },
+        "65153-T86-K000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65154-T86-K000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65142-T86-X000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65211-T86-X000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65261-T86-X000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65711-TG4-T000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65741-TG4-T000-H1-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65791-TG4-T000-H1-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "64313-TG4-T000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65152-T86-K000-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65751-T86-K002-H1-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "65512-T86-K000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65562-T86-K000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "65532-3K6-K000-50-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "621433M0 3000": {
+          qtyPack: 60,
+          packingType: "Box Special",
+        },
+        "621453M0 3000": {
+          qtyPack: 60,
+          packingType: "Box Special",
+        },
+        "621463M0 3000": {
+          qtyPack: 60,
+          packingType: "Box Special",
+        },
+        "77935-TSA-K100": {
+          qtyPack: 135,
+          packingType: "Polybox 6033",
+        },
+        "77935-TSA-K000": {
+          qtyPack: 135,
+          packingType: "Polybox 6033",
+        },
+        "74176TG4 U000-SP": {
+          qtyPack: 130,
+          packingType: "Polybox 6033",
+        },
+        "74171-SNA-A000": {
+          qtyPack: 260,
+          packingType: "Polybox 6033",
+        },
+        "74171TSA K000-SP": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "32750-5EA-K000": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "74171TE7 K000-SP": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "74171TG4 U000-SP": {
+          qtyPack: 65,
+          packingType: "Polybox 6033",
+        },
+        "74176TSA K000-SP": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "74176-T7A-0000": {
+          qtyPack: 0,
+          packingType: "Polybox 6033",
+        },
+        "37501-RB0-0001": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "79754-TF0-0000": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "32750-RB0-0002": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "32748-R1B-A500": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "32751-5EA-K000": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "IRM-8982856520": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594750": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594770": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982735201": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982735211": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594721": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594731": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594690": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594700": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982859721": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594071": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        "IRM-8982594530": {
+          qtyPack: 48,
+          packingType: "Polybox Keranjang",
+        },
+        MK403059: {
+          qtyPack: 130,
+          packingType: "Polybox 332",
+        },
+        MK403060: {
+          qtyPack: 130,
+          packingType: "Polybox 332",
+        },
+        MK403056: {
+          qtyPack: 180,
+          packingType: "SPESIAL",
+        },
+        MC142456: {
+          qtyPack: 432,
+          packingType: "Polybox 332",
+        },
+        MK142454: {
+          qtyPack: 432,
+          packingType: "Polybox 332",
+        },
+        MB097234: {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        MK485427: {
+          qtyPack: 68,
+          packingType: "Polybox 332",
+        },
+        MK402203: {
+          qtyPack: 60,
+          packingType: "Pollybox 362",
+        },
+        MK402204: {
+          qtyPack: 60,
+          packingType: "Pollybox 362",
+        },
+        MK403854: {
+          qtyPack: 180,
+          packingType: "SPESIAL",
+        },
+        MK403853: {
+          qtyPack: 180,
+          packingType: "SPESIAL",
+        },
+        MK403057: {
+          qtyPack: 60,
+          packingType: "Pollybox 362",
+        },
+        MK403058: {
+          qtyPack: 60,
+          packingType: "Pollybox 362",
+        },
+        5000390: {
+          qtyPack: 160,
+          packingType: "Polybox 332",
+        },
+        5000391: {
+          qtyPack: 160,
+          packingType: "Polybox 332",
+        },
+        "8558B872": {
+          qtyPack: 144,
+          packingType: "Polybox 332",
+        },
+        "5314A801": {
+          qtyPack: 55,
+          packingType: "Polybox 332",
+        },
+        "5314A802": {
+          qtyPack: 55,
+          packingType: "Polybox 332",
+        },
+        "731F2W000P-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "5253AJ15": {
+          qtyPack: 150,
+          packingType: "Downson 05",
+        },
+        "5253AJ16": {
+          qtyPack: 150,
+          packingType: "Downson 05",
+        },
+        "5313B269": {
+          qtyPack: 60,
+          packingType: "Polybox 332",
+        },
+        "5313B270": {
+          qtyPack: 60,
+          packingType: "Polybox 332",
+        },
+        "5253AU29": {
+          qtyPack: 325,
+          packingType: "Pallet A",
+        },
+        "5253AU30": {
+          qtyPack: 325,
+          packingType: "Pallet A",
+        },
+        "5253AS80-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "5253AL06": {
+          qtyPack: 152,
+          packingType: "Polybox 6033",
+        },
+        "5253AU25": {
+          qtyPack: 152,
+          packingType: "Polybox 6033",
+        },
+        "5253BH47": {
+          qtyPack: 584,
+          packingType: "Polybox 6033",
+        },
+        "8558C140": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "8558C141": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "5251F109": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "5360A359": {
+          qtyPack: 240,
+          packingType: "Pallet A",
+        },
+        "5305A787": {
+          qtyPack: 144,
+          packingType: "Polybox 332",
+        },
+        "5253BG75": {
+          qtyPack: 144,
+          packingType: "Polybox 332",
+        },
+        "5253AU26": {
+          qtyPack: 340,
+          packingType: "Downson 03",
+        },
+        "5253AL39": {
+          qtyPack: 340,
+          packingType: "Downson 03",
+        },
+        "5220L701-SP": {
+          qtyPack: 60,
+          packingType: "Polybox 6033",
+        },
+        "5220L001": {
+          qtyPack: 64,
+          packingType: "Polybox 332",
+        },
+        "5220L092": {
+          qtyPack: 64,
+          packingType: "Polybox 332",
+        },
+        "5253AS77": {
+          qtyPack: 300,
+          packingType: "Downson 03",
+        },
+        "5253AS78": {
+          qtyPack: 300,
+          packingType: "Downson 03",
+        },
+        "5251D676": {
+          qtyPack: 20,
+          packingType: "Pollybox 332",
+        },
+        "5253AJ63": {
+          qtyPack: 320,
+          packingType: "Pallet A",
+        },
+        "5253AJ64": {
+          qtyPack: 320,
+          packingType: "Pallet A",
+        },
+        "5220K867": {
+          qtyPack: 800,
+          packingType: "Polybox 6033",
+        },
+        "5220K867.": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "5220K867_": {
+          qtyPack: 120,
+          packingType: "Polybox 6033",
+        },
+        "5257A782": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "5253AU35": {
+          qtyPack: 60,
+          packingType: "Polybox 6033",
+        },
+        "5253AU35.": {
+          qtyPack: 30,
+          packingType: "Polybox 6033",
+        },
+        "5253AU35_": {
+          qtyPack: 30,
+          packingType: "Polybox 6033",
+        },
+        "5253AU36": {
+          qtyPack: 60,
+          packingType: "Polybox 6033",
+        },
+        "5253AU36.": {
+          qtyPack: 30,
+          packingType: "Polybox 6033",
+        },
+        "5253AU36_": {
+          qtyPack: 30,
+          packingType: "Polybox 6033",
+        },
+        "5253AM55": {
+          qtyPack: 312,
+          packingType: "Pallet A",
+        },
+        "5253AG88": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "5253AF21": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "1530A302": {
+          qtyPack: 30,
+          packingType: "Polybox 6033",
+        },
+        "1530A304": {
+          qtyPack: 30,
+          packingType: "Polybox 6033",
+        },
+        "5253AH79": {
+          qtyPack: 276,
+          packingType: "Downson 05",
+        },
+        "5253AH80": {
+          qtyPack: 276,
+          packingType: "Downson 05",
+        },
+        "5360A280-SP": {
+          qtyPack: 0,
+          packingType: "Polybox 6033",
+        },
+        "5253AL19": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "5253AL20": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "5220K869": {
+          qtyPack: 32,
+          packingType: "Polybox 332",
+        },
+        "5220G398": {
+          qtyPack: 32,
+          packingType: "Polybox 332",
+        },
+        "0-513-340-01": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "0-513-341-01": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "4140A487": {
+          qtyPack: 100,
+          packingType: "Polybox 332",
+        },
+        "5253CS71": {
+          qtyPack: 60,
+          packingType: "Polybox 332",
+        },
+        "5253CS72": {
+          qtyPack: 60,
+          packingType: "Polybox 332",
+        },
+        MT143222: {
+          qtyPack: 180,
+          packingType: "Polybox 332",
+        },
+        MB363125: {
+          qtyPack: 180,
+          packingType: "Polybox 332",
+        },
+        MT143217: {
+          qtyPack: 120,
+          packingType: "Polybox 332",
+        },
+        MT143225: {
+          qtyPack: 180,
+          packingType: "Polybox 332",
+        },
+        MT143218: {
+          qtyPack: 120,
+          packingType: "Polybox 332",
+        },
+        "5253AL25": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "5253AL26": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "5305A781": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "5305A782": {
+          qtyPack: 300,
+          packingType: "Downson 05",
+        },
+        "5251D679": {
+          qtyPack: 340,
+          packingType: "Pallet A",
+        },
+        "5253AL48-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        MN530031: {
+          qtyPack: 0,
+          packingType: "0",
+        },
+        "5290D393": {
+          qtyPack: 280,
+          packingType: "Downson 03",
+        },
+        "5290D394": {
+          qtyPack: 280,
+          packingType: "Pallet A",
+        },
+        "5290D489": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "5290D489.": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "5290D490": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "5290D490.": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "5290D397": {
+          qtyPack: 40,
+          packingType: "Polybox 332",
+        },
+        "5290D397.": {
+          qtyPack: 30,
+          packingType: "Polybox 332",
+        },
+        "5290D397_": {
+          qtyPack: 30,
+          packingType: "Polybox 332",
+        },
+        "5290D396": {
+          qtyPack: 650,
+          packingType: "Polybox 6033",
+        },
+        "5290D396.": {
+          qtyPack: 400,
+          packingType: "Polybox 332",
+        },
+        "5290D396_": {
+          qtyPack: 120,
+          packingType: "Polybox 332",
+        },
+        "5290D389-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "754C0W010P": {
+          qtyPack: 280,
+          packingType: "Downson 05",
+        },
+        "5253AJ51-BL": {
+          qtyPack: 600,
+          packingType: "Polybox 332",
+        },
+        "75528B000P-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "75529B000P-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "75175C000P-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "5313B275-BL": {
+          qtyPack: 200,
+          packingType: "Pallet Blank",
+        },
+        "76456B000P-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "76457B000P-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "5253AU23-BL": {
+          qtyPack: 400,
+          packingType: "Pallet Blank",
+        },
+        "5253AU24-BL": {
+          qtyPack: 400,
+          packingType: "Pallet Blank",
+        },
+        "5230G083-BL": {
+          qtyPack: 400,
+          packingType: "Pallet Blank",
+        },
+        "5230G084-BL": {
+          qtyPack: 400,
+          packingType: "Pallet Blank",
+        },
+        "33228-61J00-000": {
+          qtyPack: 148,
+          packingType: "Polybox 332",
+        },
+        "64572-67L00-000": {
+          qtyPack: 124,
+          packingType: "Polybox 332",
+        },
+        "64852-67L00-000": {
+          qtyPack: 138,
+          packingType: "Polybox 332",
+        },
+        "64853-67L00-000": {
+          qtyPack: 138,
+          packingType: "Polybox 332",
+        },
+        "64571-67L00-000": {
+          qtyPack: 62,
+          packingType: "Pollybox 362",
+        },
+        "69181-61J00-000-SP": {
+          qtyPack: 130,
+          packingType: "Polybox 332",
+        },
+        "69191-61J00-000-SP": {
+          qtyPack: 120,
+          packingType: "Pollybox 362",
+        },
+        "69192-61J00-000-SP": {
+          qtyPack: 120,
+          packingType: "Pollybox 362",
+        },
+        "33228-61J10-000": {
+          qtyPack: 148,
+          packingType: "Pollybox 362",
+        },
+        "65911-60K00-000": {
+          qtyPack: 56,
+          packingType: "Pollybox 362",
+        },
+        "65923-60K00-000": {
+          qtyPack: 56,
+          packingType: "Polybox 332",
+        },
+        "65953-80G00-000": {
+          qtyPack: 38,
+          packingType: "Polybox 332",
+        },
+        "33228-61J20-000-SP": {
+          qtyPack: 148,
+          packingType: "Polybox 332",
+        },
+        "33228-61J30-000-SP": {
+          qtyPack: 148,
+          packingType: "Polybox 6033",
+        },
+        "57332-73R01-000-SP": {
+          qtyPack: 135,
+          packingType: "Polybox 332",
+        },
+        "57337-73R01-000-SP": {
+          qtyPack: 135,
+          packingType: "Polybox 332",
+        },
+        "58751-68P10-000": {
+          qtyPack: 288,
+          packingType: "Downson 03",
+        },
+        "58651-68P20-000": {
+          qtyPack: 288,
+          packingType: "Downson 03",
+        },
+        "58832-52S20-000": {
+          qtyPack: 46,
+          packingType: "Polybox 332",
+        },
+        "88819-73RA0-000": {
+          qtyPack: 120,
+          packingType: "0",
+        },
+        "88319-73RA0-000": {
+          qtyPack: 120,
+          packingType: "0",
+        },
+        "88318-73RA0-000": {
+          qtyPack: 180,
+          packingType: "Downson 03",
+        },
+        "88818-73RA0-000": {
+          qtyPack: 180,
+          packingType: "Downson 03",
+        },
+        "61235-68P00-000-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "61131-73R00-000": {
+          qtyPack: 144,
+          packingType: "Downson 03",
+        },
+        "61181-73R00-000": {
+          qtyPack: 144,
+          packingType: "Downson 03",
+        },
+        "63486-73R00-000-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "88315-73RA0-000-SP": {
+          qtyPack: 34,
+          packingType: "Polybox 332",
+        },
+        "88815-73RA0-000-SP": {
+          qtyPack: 45,
+          packingType: "Polybox 332",
+        },
+        "85113-68P00-000-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "58652-68P00-000": {
+          qtyPack: 168,
+          packingType: "Pollybox 362",
+        },
+        "58752-68P00-000": {
+          qtyPack: 168,
+          packingType: "Pollybox 362",
+        },
+        "88111-73RA0-000-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "61531-73R00-000-SP": {
+          qtyPack: 180,
+          packingType: "Downson 03",
+        },
+        "59742-77M00": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "59743-77M00": {
+          qtyPack: 0,
+          packingType: "Polybox 332",
+        },
+        "69166-61J00-000-SP": {
+          qtyPack: 180,
+          packingType: "Downson 03",
+        },
+        "69182-61J00-000-SP": {
+          qtyPack: 130,
+          packingType: "Polybox 332",
+        },
+        "63142-52S00-000": {
+          qtyPack: 255,
+          packingType: "Polybox 332",
+        },
+        "63642-52S00-000": {
+          qtyPack: 255,
+          packingType: "Polybox 332",
+        },
+        "58833-52S10-000-SP": {
+          qtyPack: 46,
+          packingType: "Pollybox 332",
+        },
+        "61212-52S00-000": {
+          qtyPack: 115,
+          packingType: "Polybox 332",
+        },
+        "61222-52S00-000": {
+          qtyPack: 115,
+          packingType: "Polybox 332",
+        },
+        "58834-52S00-000": {
+          qtyPack: 184,
+          packingType: "Polybox 332",
+        },
+        "58835-52S00-000": {
+          qtyPack: 184,
+          packingType: "Polybox 332",
+        },
+        "58651-68P10-000": {
+          qtyPack: 168,
+          packingType: "Downson 03",
+        },
+        "61124-68P10-000": {
+          qtyPack: 288,
+          packingType: "Polybox 332",
+        },
+        "61125-68P00-000": {
+          qtyPack: 288,
+          packingType: "Polybox 332",
+        },
+        "58751-52R00-000": {
+          qtyPack: 168,
+          packingType: "Downson 03",
+        },
+        "61165-73R00-000-SP": {
+          qtyPack: 90,
+          packingType: "Polybox 332",
+        },
+        "88155-73RA0-000": {
+          qtyPack: 81,
+          packingType: "Polybox 6033",
+        },
+        "88152-73RA0-000": {
+          qtyPack: 81,
+          packingType: "Polybox 6033",
+        },
+        "88151-73RA0-000": {
+          qtyPack: 162,
+          packingType: "Pollybox 362",
+        },
+        "86156-74P60-000": {
+          qtyPack: 108,
+          packingType: "Polybox 332",
+        },
+        "68572-73R10-000": {
+          qtyPack: 300,
+          packingType: "Polybox 6033",
+        },
+        "68772-73R10-000": {
+          qtyPack: 300,
+          packingType: "Polybox 6033",
+        },
+        "61164-73R00-000-SP": {
+          qtyPack: 135,
+          packingType: "Polybox 332",
+        },
+        "71721-77500-000": {
+          qtyPack: 32,
+          packingType: "Polybox 332",
+        },
+        "71731-77500-000": {
+          qtyPack: 32,
+          packingType: "Polybox 332",
+        },
+        "48254-73R00-000": {
+          qtyPack: 55,
+          packingType: "Polybox 332",
+        },
+        "62654-73R00-000": {
+          qtyPack: 300,
+          packingType: "Polybox 6033",
+        },
+        "59221-68P10-000": {
+          qtyPack: 54,
+          packingType: "Pollybox 362",
+        },
+        "69167-73R00-000": {
+          qtyPack: 180,
+          packingType: "Polybox 6033",
+        },
+        "68174-73R10-000": {
+          qtyPack: 300,
+          packingType: "Polybox 6033",
+        },
+        "85323-74P00-000": {
+          qtyPack: 190,
+          packingType: "Polybox 6033",
+        },
+        "85823-74P00-000": {
+          qtyPack: 190,
+          packingType: "Polybox 6033",
+        },
+        "87319-73RA0-000": {
+          qtyPack: 110,
+          packingType: "Polybox 332",
+        },
+        "87819-73RA0-000": {
+          qtyPack: 110,
+          packingType: "Polybox 332",
+        },
+        "85318-74P10-000": {
+          qtyPack: 360,
+          packingType: "Polybox 332",
+        },
+        "85818-74P10-000": {
+          qtyPack: 360,
+          packingType: "Polybox 332",
+        },
+        "63484-73R00-000": {
+          qtyPack: 300,
+          packingType: "Dowson 03",
+        },
+        "68564-77M000-000": {
+          qtyPack: 0,
+          packingType: "0",
+        },
+        "68764-77M000-000": {
+          qtyPack: 0,
+          packingType: "0",
+        },
+        "63483-73R00-000-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "88231-73RB0-000-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "87323-73RK0-000-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "88731-73RB0-000-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "64132-73R00-000-BL": {
+          qtyPack: 120,
+          packingType: "Polybox 332",
+        },
+        "64532-73R00-000-BL": {
+          qtyPack: 120,
+          packingType: "Polybox 332",
+        },
+        "85312-74P00-000-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "85812-74P00-000-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "63883-73R00-000-BL": {
+          qtyPack: 300,
+          packingType: "Pallet Blank",
+        },
+        "61522-73R20-000-BL": {
+          qtyPack: 600,
+          packingType: "Pallet Blank",
+        },
+        "5253AT38": {
+          qtyPack: 300,
+          packingType: "Pallet B",
+        },
+        "5253AU27": {
+          qtyPack: 325,
+          packingType: "Pallet B",
+        },
+        "5253AU28": {
+          qtyPack: 325,
+          packingType: "Pallet B",
+        },
+        "5251D678": {
+          qtyPack: 340,
+          packingType: "Pallet B",
+        },
+        "5253BH46": {
+          qtyPack: 584,
+          packingType: "Pollybox",
+        },
+        "731F0W000P": {
+          qtyPack: 120,
+          packingType: "Pallet A",
+        },
+        "731F0W000P.": {
+          qtyPack: 30,
+          packingType: "Pallet A",
+        },
+        "731F0W000P_": {
+          qtyPack: 120,
+          packingType: "Pallet A",
+        },
+        "5253AJ61": {
+          qtyPack: 40,
+          packingType: "Pollybox",
+        },
+        "5253AJ61.": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "5253AJ61_": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "5253AJ62": {
+          qtyPack: 40,
+          packingType: "Pollybox",
+        },
+        "5253AJ62.": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "5253AJ62_": {
+          qtyPack: 40,
+          packingType: "Pollybox",
+        },
+        "5253AM54": {
+          qtyPack: 312,
+          packingType: "Pallet A",
+        },
+        "5253AJ99": {
+          qtyPack: 75,
+          packingType: "Pallet C",
+        },
+        "5290D388": {
+          qtyPack: 300,
+          packingType: "Pallet Spesial",
+        },
+        "5251D430": {
+          qtyPack: 84,
+          packingType: "Pallet Spesial",
+        },
+        "5251D430.": {
+          qtyPack: 120,
+          packingType: "Pallet A",
+        },
+        "5305A777": {
+          qtyPack: 300,
+          packingType: "Pallet B",
+        },
+        "5305A778": {
+          qtyPack: 300,
+          packingType: "Pallet B",
+        },
+        "5253AK92": {
+          qtyPack: 300,
+          packingType: "Pallet C",
+        },
+        "5253AL03": {
+          qtyPack: 90,
+          packingType: "Pallet C",
+        },
+        "5253AL04-CO": {
+          qtyPack: 150,
+          packingType: "Pallet C",
+        },
+        "5253AJ28": {
+          qtyPack: 354,
+          packingType: "Pallet B",
+        },
+        "5290D373": {
+          qtyPack: 192,
+          packingType: "Pallet C",
+        },
+        "5290D374": {
+          qtyPack: 192,
+          packingType: "Pallet C",
+        },
+        "5290F217": {
+          qtyPack: 192,
+          packingType: "Pallet C",
+        },
+        "5290F218": {
+          qtyPack: 192,
+          packingType: "Pallet C",
+        },
+        "75523W050P": {
+          qtyPack: 300,
+          packingType: "Pallet B",
+        },
+        "745P3W000P": {
+          qtyPack: 100,
+          packingType: "Pallet B",
+        },
+        "745P3W000P-CO": {
+          qtyPack: 76,
+          packingType: "Pallet B",
+        },
+        "75521W020P": {
+          qtyPack: 288,
+          packingType: "Pallet B",
+        },
+        "5253AL04": {
+          qtyPack: 100,
+          packingType: "Pallet C",
+        },
+        "57815-BZ150": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "51135-BZ080": {
+          qtyPack: 80,
+          packingType: "Pollybox",
+        },
+        "71328-BZ010": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "71381-BZ010": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "71339-BZ010": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "71333-BZ010": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "71334-BZ010": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "71329-BZ010": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "71397-BZ020": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "71221-BZ010": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "58336-BZ100": {
+          qtyPack: 40,
+          packingType: "Pollybox",
+        },
+        "61653-BZ020": {
+          qtyPack: 90,
+          packingType: "Pollybox",
+        },
+        "61654-BZ020": {
+          qtyPack: 90,
+          packingType: "Pollybox",
+        },
+        "61671-BZ070": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "61063-BZ100": {
+          qtyPack: 20,
+          packingType: "Pallet Spesial",
+        },
+        "61064-BZ100": {
+          qtyPack: 20,
+          packingType: "Pallet Spesial",
+        },
+        "62122TG4 T000": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "65714-TG4-T000-H1": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "65764-TG4-T000-H1": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "65713-TG4-T000-H1": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "65763-TG4-T000-H1": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "65716-TG2-K001-50": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "65766-TG2-K001-50": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "65742-TG4-T000-H1": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "64315-TG4-T000-H1": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "64715-TG4-T000-H1": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "5253AL43": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "5253AL44": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "5257A788": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "5257A790": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "5257A794-CO": {
+          qtyPack: 25,
+          packingType: "Pollybox",
+        },
+        "65155-T86-K000-50": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "65145-TSV-K000-H1": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "65146-T86-K001-H1": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "65756-T86A-X000-H1": {
+          qtyPack: 240,
+          packingType: "Pollybox",
+        },
+        "65195-TSV-K000-H1": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "65756-T86-K001-H1": {
+          qtyPack: 300,
+          packingType: "Pollybox",
+        },
+        "65196-T86-K001-H1": {
+          qtyPack: 300,
+          packingType: "Pallet A",
+        },
+        "62126-3M0-J000-H1": {
+          qtyPack: 200,
+          packingType: "Pollybox",
+        },
+        "62135-3M0-J000-H1": {
+          qtyPack: 90,
+          packingType: "Pollybox",
+        },
+        "71252-3M0-3000": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "71255-3M0-3000": {
+          qtyPack: 200,
+          packingType: "Pollybox",
+        },
+        "68128-3M0-J000-H1": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "65535-3K6-K000-H1": {
+          qtyPack: 20,
+          packingType: "Pollybox",
+        },
+        "65585-3K6-K000-H1": {
+          qtyPack: 20,
+          packingType: "Pollybox",
+        },
+        "65586-3K6-K000-H1": {
+          qtyPack: 40,
+          packingType: "Pollybox",
+        },
+        "65707-TSV-K000-H1": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "65516-3K6-K000-H1": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "65566-3K6-K000-H1": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "65539-3K6-K000-H1": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "65536-3K6-K000-H1": {
+          qtyPack: 40,
+          packingType: "Pollybox",
+        },
+        "65195-T86-X000-H1": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "65145-T86-X000-H1": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "65196-T86-X000-H1": {
+          qtyPack: 240,
+          packingType: "Pallet A",
+        },
+        "65146-T86-X000-H1": {
+          qtyPack: 240,
+          packingType: "Pallet A",
+        },
+        "744L9B070P": {
+          qtyPack: 192,
+          packingType: "Pollybox",
+        },
+        "748C4B010P": {
+          qtyPack: 48,
+          packingType: "Pollybox",
+        },
+        "76488B000P": {
+          qtyPack: 48,
+          packingType: "Pollybox",
+        },
+        "74560B000P": {
+          qtyPack: 96,
+          packingType: "Pollybox",
+        },
+        "75556B000P": {
+          qtyPack: 96,
+          packingType: "Pollybox",
+        },
+        "748C5B010P": {
+          qtyPack: 48,
+          packingType: "Pollybox",
+        },
+        "76489B000P": {
+          qtyPack: 48,
+          packingType: "Pollybox",
+        },
+        "76494B000P": {
+          qtyPack: 96,
+          packingType: "Pollybox",
+        },
+        "75557B000P": {
+          qtyPack: 96,
+          packingType: "Pollybox",
+        },
+        "74589B020P": {
+          qtyPack: 150,
+          packingType: "Pollybox",
+        },
+        "74589B000P": {
+          qtyPack: 150,
+          packingType: "Pollybox",
+        },
+        "93825B000P": {
+          qtyPack: 240,
+          packingType: "Pollybox",
+        },
+        "93824B000P": {
+          qtyPack: 240,
+          packingType: "Pollybox",
+        },
+        "76763B000P": {
+          qtyPack: 80,
+          packingType: "Pollybox",
+        },
+        "767L2B020P": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "767L3B020P": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "738A3B010P": {
+          qtyPack: 600,
+          packingType: "Pollybox",
+        },
+        "766H6B000P": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "766H7B000P": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "748D6B000P-SP": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "748D7B000P-SP": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        MN530032V: {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        MN530033V: {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "93476A120PV": {
+          qtyPack: 44,
+          packingType: "Pallet P22",
+        },
+        MB167009V: {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        MB134892V: {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "5251B224M": {
+          qtyPack: 0,
+          packingType: "Pallet P22",
+        },
+        "8006A180YV": {
+          qtyPack: 60,
+          packingType: "Pallet P22",
+        },
+        MN530030V: {
+          qtyPack: 44,
+          packingType: "Pallet P22",
+        },
+        MB167195V: {
+          qtyPack: 60,
+          packingType: "Pallet P22",
+        },
+        MB152699V: {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "MKM019215-SP": {
+          qtyPack: 0,
+          packingType: "Pallet P22",
+        },
+        "75572B010P-BL": {
+          qtyPack: 600,
+          packingType: "Pallet A",
+        },
+        MB135558M: {
+          qtyPack: 100,
+          packingType: "Pallet Spesial",
+        },
+        "5305A771": {
+          qtyPack: 200,
+          packingType: "Pallet C",
+        },
+        "5305A772": {
+          qtyPack: 200,
+          packingType: "Pallet C",
+        },
+        "5253AL07": {
+          qtyPack: 150,
+          packingType: "Pallet C",
+        },
+        "68721-73R01-000": {
+          qtyPack: 320,
+          packingType: "Pallet B",
+        },
+        "68521-73R01-000": {
+          qtyPack: 320,
+          packingType: "Pallet B",
+        },
+        MB136361V: {
+          qtyPack: 120,
+          packingType: "Pallet P22",
+        },
+        MB136364V: {
+          qtyPack: 120,
+          packingType: "120",
+        },
+        MB282717V: {
+          qtyPack: 120,
+          packingType: "Pallet P22",
+        },
+        MB137931V: {
+          qtyPack: 120,
+          packingType: "Pallet P22",
+        },
+        MB137932V: {
+          qtyPack: 120,
+          packingType: "Pallet P22",
+        },
+        "75573B000P-BL": {
+          qtyPack: 600,
+          packingType: "Pallet A",
+        },
+        "17406B010P-SP": {
+          qtyPack: 240,
+          packingType: "Pallet Spesial",
+        },
+        "17296B000P-SP": {
+          qtyPack: 240,
+          packingType: "Pallet",
+        },
+        "767J8B000P": {
+          qtyPack: 240,
+          packingType: "Pallet",
+        },
+        "767E6B000P": {
+          qtyPack: 230,
+          packingType: "Pallet",
+        },
+        "767E7B000P": {
+          qtyPack: 230,
+          packingType: "Pallet",
+        },
+        "73252B010P": {
+          qtyPack: 300,
+          packingType: "Pallet",
+        },
+        "73242B010P": {
+          qtyPack: 250,
+          packingType: "Pallet",
+        },
+        "73231B010P": {
+          qtyPack: 30,
+          packingType: "Pallet",
+        },
+        "90115B000P": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "90114B000P": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "17298B000P-SP": {
+          qtyPack: 252,
+          packingType: "Pallet",
+        },
+        "75658B000P": {
+          qtyPack: 396,
+          packingType: "Pallet",
+        },
+        "75659B000P": {
+          qtyPack: 396,
+          packingType: "Pallet",
+        },
+        "767J9B000P": {
+          qtyPack: 240,
+          packingType: "Pallet",
+        },
+        MB136010: {
+          qtyPack: 120,
+          packingType: "Pallet Spesial",
+        },
+        MN530002X: {
+          qtyPack: 60,
+          packingType: "Pallet Spesial",
+        },
+        "11198-61J02-000": {
+          qtyPack: 24,
+          packingType: "Pollybox",
+        },
+        "17201W150P": {
+          qtyPack: 10,
+          packingType: "Pallet Spesial",
+        },
+        "MB137171X-SP": {
+          qtyPack: 120,
+          packingType: "Pallet",
+        },
+        MB032883: {
+          qtyPack: 120,
+          packingType: "Pallet",
+        },
+        MB137096: {
+          qtyPack: 120,
+          packingType: "Pallet",
+        },
+        "88731-73RB0-000-AP": {
+          qtyPack: 0,
+          packingType: "None",
+        },
+        "65910-60K00": {
+          qtyPack: 75,
+          packingType: "None",
+        },
+        MB348831: {
+          qtyPack: 60,
+          packingType: "None",
+        },
+        "5253C933": {
+          qtyPack: 120,
+          packingType: "Pallet",
+        },
+        MB485215: {
+          qtyPack: 120,
+          packingType: "Pallet",
+        },
+        "51205-BZ090": {
+          qtyPack: 4,
+          packingType: "Pallet",
+        },
+        "51206-BZ020": {
+          qtyPack: 4,
+          packingType: "Pallet",
+        },
+        "5253AU33": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "5253AU33.": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "5253AU33_": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "5253AU34": {
+          qtyPack: 60,
+          packingType: "Pollybox",
+        },
+        "5253AU34.": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "5253AU34_": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "5220K750": {
+          qtyPack: 800,
+          packingType: "Pollybox",
+        },
+        "5220K750.": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "5220K750_": {
+          qtyPack: 320,
+          packingType: "Pollybox",
+        },
+        "5290D487": {
+          qtyPack: 300,
+          packingType: "Pollybox",
+        },
+        "5290D487.": {
+          qtyPack: 300,
+          packingType: "Pollybox",
+        },
+        "5290D487_": {
+          qtyPack: 300,
+          packingType: "Pollybox",
+        },
+        "5290D488": {
+          qtyPack: 300,
+          packingType: "Pollybox",
+        },
+        "5290D488.": {
+          qtyPack: 300,
+          packingType: "Pollybox",
+        },
+        "5290D488_": {
+          qtyPack: 300,
+          packingType: "Pollybox",
+        },
+        "5290D650": {
+          qtyPack: 600,
+          packingType: "Pallet",
+        },
+        "5253AJ54": {
+          qtyPack: 200,
+          packingType: "Pollybox",
+        },
+        "5253AL29": {
+          qtyPack: 200,
+          packingType: "Pollybox",
+        },
+        "5305A793": {
+          qtyPack: 300,
+          packingType: "Pallet",
+        },
+        "5305A794": {
+          qtyPack: 300,
+          packingType: "Pallet",
+        },
+        "17298B000P-AP": {
+          qtyPack: 18,
+          packingType: "Pollybox",
+        },
+        "748D6B000P": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "748D7B000P": {
+          qtyPack: 30,
+          packingType: "Pollybox",
+        },
+        "17406B000P": {
+          qtyPack: 10,
+          packingType: "Pollybox",
+        },
+        "71876W000P": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "71876W010P": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "71876W020P": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "71217-BZ010": {
+          qtyPack: 100,
+          packingType: "Pallet",
+        },
+        "6722A771-BD": {
+          qtyPack: 120,
+          packingType: "Pallet Spesial",
+        },
+        "6722A772-BD": {
+          qtyPack: 120,
+          packingType: "Pallet Spesial",
+        },
+        "74171TG4 U000-AP": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "74171-SNA-A000-AP": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "37501RB0 0001": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "79754TF0 0000": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "32750RB0 0002": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "32748R1B A500": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "327505EA K000": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "74171TE7 K000-AP": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "74176TG4 U000-AP": {
+          qtyPack: 130,
+          packingType: "Pollybox",
+        },
+        "77935TSA K000": {
+          qtyPack: 135,
+          packingType: "Pollybox",
+        },
+        "77935TSA K100": {
+          qtyPack: 135,
+          packingType: "Pollybox",
+        },
+        "327515EA K000": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "74171-TSA-K000-AP": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "74176-TSA-K000-AP": {
+          qtyPack: 120,
+          packingType: "Pollybox",
+        },
+        "712503M0 0004": {
+          qtyPack: 120,
+          packingType: "Pallet Spesial",
+        },
+        "74176-T7A-0000": {
+          qtyPack: 0,
+          packingType: "Pollybox",
+        },
+        "767E4B000P": {
+          qtyPack: 10,
+          packingType: "Pollybox",
+        },
+        "76762B000P": {
+          qtyPack: 20,
+          packingType: "Pollybox",
+        },
+        "74562B010P": {
+          qtyPack: 36,
+          packingType: "Pollybox",
+        },
+        "65121-68P00-000-SP": {
+          qtyPack: 96,
+          packingType: "Pollybox",
+        },
+        "65121-72U00-000-SP": {
+          qtyPack: 96,
+          packingType: "Pollybox",
+        },
+        "65121-72U00-000-SP": {
+          qtyPack: 12,
+          packingType: "Pollybox",
+        },
+        "48254-52R00-000": {
+          qtyPack: 36,
+          packingType: "Pollybox",
+        },
+        "69121-74T00-000-SP": {
+          qtyPack: 50,
+          packingType: "Pollybox",
+        },
+        "39225-74U10-000": {
+          qtyPack: 480,
+          packingType: "Pollybox",
+        },
+        "39326-74U10-000": {
+          qtyPack: 480,
+          packingType: "Pollybox",
+        },
+        "39323-74U20-000": {
+          qtyPack: 24,
+          packingType: "Pollybox",
+        },
+        "39324-74U20-000": {
+          qtyPack: 24,
+          packingType: "Pollybox",
+        },
+        "58671-74T00-000-SP": {
+          qtyPack: 160,
+          packingType: "Pollybox",
+        },
+        "58771-74T00-000-SP": {
+          qtyPack: 160,
+          packingType: "Pollybox",
+        },
+        "61131-68P00-000-SP": {
+          qtyPack: 16,
+          packingType: "Pollybox",
+        },
+        "61181-68P00-000-SP": {
+          qtyPack: 16,
+          packingType: "Pollybox",
+        },
+        "85818-74P20-000": {
+          qtyPack: 360,
+          packingType: "Pollybox",
+        },
+        "85318-74P20-000": {
+          qtyPack: 360,
+          packingType: "Pollybox",
+        },
+        "61571-74U00-000": {
+          qtyPack: 144,
+          packingType: "Pollybox",
+        },
+        "57332-74T00-000-SP": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "57337-74T00-000-SP": {
+          qtyPack: 100,
+          packingType: "Pollybox",
+        },
+        "65122-68P00-000": {
+          qtyPack: 48,
+          packingType: "Pollybox",
+        },
+        "65122-72U00-000": {
+          qtyPack: 48,
+          packingType: "Pollybox",
+        },
+        "65123-74U00-000": {
+          qtyPack: 192,
+          packingType: "Pollybox",
+        },
+        "68572-55T00-000": {
+          qtyPack: 81,
+          packingType: "Pollybox",
+        },
+        "68772-55T00-000": {
+          qtyPack: 81,
+          packingType: "Pollybox",
+        },
+        "34561-74U00-000-SP": {
+          qtyPack: 8,
+          packingType: "Pollybox",
+        },
+        "65561-74U00-000": {
+          qtyPack: 25,
+          packingType: "Pollybox",
+        },
+  "743F4C000P": {
+    qtyPack: 84,
+    packingType: "Pallet BACKBONE LWR"
+  },
+  "73231C010P": {
+    qtyPack: 192,
+    packingType: "Dawson 05"
+  },
+  "75612C000P": {
+    qtyPack: 294,
+    packingType: "Dawson 07"
+  },
+  "75652C010P": {
+    qtyPack: 75,
+    packingType: "Internal C"
+  },
+  "75521W020P-ICHII": {
+    qtyPack: 8,
+    packingType: "BOX 6656"
+  },
+  "5253AK92-ICHII": {
+    qtyPack: 8,
+    packingType: "BOX 6656"
+  },
+  "74560C000P": {
+    qtyPack: 78,
+    packingType: "Box 6033"
+  },
+  "756M3C000P": {
+    qtyPack: 78,
+    packingType: "Box 6033"
+  },
+  "5253AJ54-RX": {
+    qtyPack: 78,
+    packingType: "Box 6033"
+  },
+  "75636C000P": {
+    qtyPack: 50,
+    packingType: "Box 6033"
+  },
+  "75637C000P": {
+    qtyPack: 50,
+    packingType: "Box 6033"
+  },
+  "743W6C000P": {
+    qtyPack: 60,
+    packingType: "Box 6033"
+  },
+  "743W7C000P": {
+    qtyPack: 60,
+    packingType: "Box 6033"
+  },
+  "22644W030P-SN": {
+    qtyPack: 20,
+    packingType: "Box 6644"
+  },
+  "22651W060P": {
+    qtyPack: 80,
+    packingType: "Box 6644"
+  },
+  "22641W050P": {
+    qtyPack: 80,
+    packingType: "Box 6644"
+  },
+  "22649W010P": {
+    qtyPack: 21,
+    packingType: "Box 6644"
+  },
+  "22774W000P": {
+    qtyPack: 22,
+    packingType: "Box 6644"
+  },
+  "21612W010P": {
+    qtyPack: 30,
+    packingType: "Box 6644"
+  },
+  "21614W000P": {
+    qtyPack: 80,
+    packingType: "Box 6644"
+  },
+  "28236C000P": {
+    qtyPack: 60,
+    packingType: "Box 6033"
+  },
+  "76488B000P-ICHII": {
+    qtyPack: 24,
+    packingType: "Box 6644"
+  },
+  "76489B000P-ICHII": {
+    qtyPack: 24,
+    packingType: "Box 6644"
+  },
+  "51135C000P": {
+    qtyPack: 20,
+    packingType: "Box 6033"
+  },
+  "51134C000P": {
+    qtyPack: 20,
+    packingType: "Box 6033"
+  },
+  "754C2C000P": {
+    qtyPack: 20,
+    packingType: "Box 6033"
+  },
+  "50774C000P": {
+    qtyPack: 84,
+    packingType: "Box 6033"
+  },
+  "501F7C000P": {
+    qtyPack: 150,
+    packingType: "Box 6644"
+  },
+  "501F6C000P": {
+    qtyPack: 150,
+    packingType: "Box 6644"
+  },
+  "641C3C010P": {
+    qtyPack: 24,
+    packingType: "Box 6033"
+  },
+  "641C2C000P": {
+    qtyPack: 24,
+    packingType: "Box 6033"
+  },
+  "641C6C000P": {
+    qtyPack: 48,
+    packingType: "Box 6033"
+  },
+  "641C7C000P": {
+    qtyPack: 48,
+    packingType: "Box 6033"
+  },
+  "76320C010P": {
+    qtyPack: 45,
+    packingType: "Box 6033"
+  },
+  "76321C000P": {
+    qtyPack: 45,
+    packingType: "Box 6033"
+  },
+  "732H9C000P": {
+    qtyPack: 90,
+    packingType: "Box 6033"
+  },
+  "732H9C060P": {
+    qtyPack: 90,
+    packingType: "Box 6033"
+  },
+  "50772C000P": {
+    qtyPack: 20,
+    packingType: "Box 6033"
+  },
+  "641C3C040P": {
+    qtyPack: 168,
+    packingType: "Box 6033"
+  },
+  "641C2C020P": {
+    qtyPack: 168,
+    packingType: "Box 6033"
+  },
+  "76654C000P": {
+    qtyPack: 90,
+    packingType: "Box 6644"
+  },
+  "76655C000P": {
+    qtyPack: 90,
+    packingType: "Box 6644"
+  },
+  "74352C000P": {
+    qtyPack: 276,
+    packingType: "Box 6033"
+  },
+  "74353C000P": {
+    qtyPack: 276,
+    packingType: "Box 6033"
+  },
+  "73235C010P": {
+    qtyPack: 192,
+    packingType: "Dawson 05"
+  },
+  "73234C000P": {
+    qtyPack: 192,
+    packingType: "Dawson 05"
+  },
+  "4140A487-ICHII": {
+    qtyPack: 120,
+    packingType: "Box 6644"
+  },
+  "22644W030P": {
+    qtyPack: 20,
+    packingType: "Box 6644"
+  },
+      };
+
+
+      let csvData = [];
+
+      // Fungsi untuk membaca file CSV atau XLSX
+      document.getElementById("csv-file").addEventListener("change", function (event) {
+        const files = event.target.files;
+        csvData = [];
+
+        Array.from(files).forEach((file) => {
+          const fileType = file.name.split('.').pop().toLowerCase();
+          
+          if (fileType === "csv") {
+            Papa.parse(file, {
+              complete: (results) => {
+                csvData = csvData.concat(results.data);
+                createTable(csvData);
+              },
+              header: true,
+            });
+          } else if (fileType === "xlsx") {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: "array" });
+              const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+              const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+              
+              csvData = csvData.concat(jsonData);
+              createTable(csvData);
+            };
+            reader.readAsArrayBuffer(file);
+          } else {
+            alert("Hanya file CSV atau XLSX yang didukung!");
+          }
+        });
+      });
+
+      // Fungsi untuk membuat tabel dari data
+      function createTable(data) {
+        const tableBody = document.querySelector("#csv-table tbody");
+        tableBody.innerHTML = "";
+
+        data.forEach((row) => {
+          const isEmptyRow = Object.values(row).every(
+            (value) => value === "" || value === undefined || value === "undefined"
+          );
+
+          if (!isEmptyRow) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${row.ID || ""}</td>
+              <td>${row["Part Number"] || ""}</td>
+              <td>${row["Part Name"] || ""}</td>
+              <td>${row["DI Number"] || ""}</td>
+              <td>${row["Quantity/Pack"] || ""}</td>
+              <td>${row["Purchase Number"] || ""}</td>
+              <td>${formatDateFromExcelSerial(row["Delivery Date"])}</td>
+              <td>${row["Supplier"] || ""}</td>
+              <td>${row["Cycle"] || ""}</td>
+              <td>${row["Warehouse"] || ""}</td>
+              <td>${row["Bin"] || ""}</td>
+              <td>${row["Bins"] || ""}</td>
+            `;
+            tableBody.appendChild(tr);
+          }
+        });
+      }
+
+      // Fungsi untuk generate label
+      function generateDI() {
+        if (csvData.length === 0) {
+          alert("Upload file CSV/XLSX terlebih dahulu!");
+          return;
+        }
+        generateLabels(csvData);
+      }
+
+      function generateLabels(data) {
+        const labelsContainer = document.getElementById("labels-container");
+        labelsContainer.innerHTML = "";
+
+        data.forEach((row, index) => {
+          const partNumber = row["Part Number"];
+          const partName = row["Part Name"];
+          const qty = parseInt(row["Quantity/Pack"]) || 0;
+          const packingInfo = packingDatabase[partNumber] || { 
+            qtyPack: qty, 
+            packingType: "-" 
+          };
+          const packingStandard = packingInfo.qtyPack;
+          const packingType = packingInfo.packingType;
+          const numLabels = Math.ceil(qty / packingStandard);
+
+          for (let i = 0; i < numLabels; i++) {
+            const currentQty = 
+              i === numLabels - 1 ? qty - packingStandard * i : packingStandard;
+            
+            const labelHtml = `
+              <div class="label-container">
+                <div class="header">
+                  <div>
+                    Part Number<br>
+                    <span>${partNumber}</span><br>
+                    <span>${partName}</span><br>
+                    <span style="display: none;">${row.Bins}&</span><br>
+                    <span style="display: none;">${row.ID}&</span><br>
+                  </div>
+                  <div class="qr-code" id="qrcode-${index}-${i}"></div>
+                  <div class="label-counter">${i + 1}/${numLabels}</div>
+                </div>
+                <div class="section">
+                  <div>DI Number : <span>${row["DI Number"]}</span></div>
+                </div>
+                <div class="info-section">
+                  <div>
+                    Quantity/Pack<br>
+                    <span>${currentQty}</span> Pcs
+                  </div>
+                  <div>
+                    Type Packaging<br>
+                    <span>${packingType}</span>
+                  </div>
+                </div>
+                <div class="section">
+                  <div>Purchase Number : <span>${row["Purchase Number"]}</span></div>
+                </div>
+                <div class="section">
+                  <div>Delivery Plan : <span>${formatDateFromExcelSerial(row["Delivery Date"])}</span></div>
+                </div>
+                <div>Delivery Actual : <span></span></div>
+                <div class="info-section">
+                  <div>
+                    Warehouse/Bin<br>
+                    <span>${row["Warehouse"]}</span>
+                  </div>
+                  <div>
+                    WHseCode/BinCode<br>
+                    <span>${row["Bin"]}</span>
+                  </div>
+                </div>
+                <div class="footer">
+                  <div><span>${row["Supplier"]}</span><br></div>
+                  <div><div>Cycle <span>${row["Cycle"]}</span><br><div></div>
+                </div>
+              </div>
+            `;
+
+            const div = document.createElement("div");
+            div.innerHTML = labelHtml;
+            labelsContainer.appendChild(div);
+
+            // Generate QR Code
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, "0");
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const yy = String(today.getFullYear()).slice(-2);
+            const formattedDate = dd + mm + yy;
+
+            const qrCodeData = `${partNumber}~${currentQty}~${row["Bin"]}~${formattedDate}~${row["Purchase Number"]}~WH~1~${i + 1}`;
+            new QRCode(document.getElementById(`qrcode-${index}-${i}`), {
+              text: qrCodeData,
+              width: 80,
+              height: 80,
+              correctLevel: QRCode.CorrectLevel.L,
+            });
+          }
+        });
+      }
+
+      // Fungsi untuk refresh halaman
+      function refreshPage() {
+        location.reload();
+      }
+	function excelDateToJSDate(serial) {
+  const utc_days = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400; // detik
+  const date_info = new Date(utc_value * 1000);
+  return date_info;
+}
+
+function formatDateFromExcelSerial(serial) {
+  const date = excelDateToJSDate(serial);
+  const options = { day: '2-digit', month: 'short', year: 'numeric' };
+  return date.toLocaleDateString('en-GB', options); // Hasil: 10 May 2025
+}
+
+
+
+      // Fungsi untuk generate PDF
+      function generatePDF() {
+        const element = document.getElementById("labels-container");
+        const container = document.querySelector(".container");
+        const csvTableContainer = document.querySelector(".csv-table-container");
+        
+        container.style.display = "none";
+        csvTableContainer.style.display = "none";
+
+        const opt = {
+          margin: [5, 3, 3, 3],
+          filename: "Delivery_InstructionSAI.pdf",
+          image: { type: "jpeg", quality: 1 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "mm", format: [210, 297], orientation: "portrait" },
+        };
+
+        html2pdf()
+          .from(element)
+          .set(opt)
+          .save()
+          .then(() => {
+            container.style.display = "block";
+            csvTableContainer.style.display = "block";
+          });
+      }
+
+      // Fungsi untuk print
+      function generatePrint() {
+        const labelsContainer = document.getElementById("labels-container");
+
+        if (labelsContainer.innerHTML.trim() === "") {
+          alert("Generate label terlebih dahulu!");
+          return;
+        }
+
+        const container = document.querySelector(".container");
+        const csvTableContainer = document.querySelector(".csv-table-container");
+        container.style.display = "none";
+        csvTableContainer.style.display = "none";
+
+        const printStyle = `
+          <style>
+            @media print {
+              @page {
+                size: 68mm 99mm;
+                margin: 0mm;
+              }
+              body {
+                margin: 0;
+              }
+              .container, .csv-table-container {
+                display: none;
+              }
+            }
+          </style>
+        `;
+
+        const originalHead = document.head.innerHTML;
+        document.head.innerHTML += printStyle;
+
+        window.print();
+
+        container.style.display = "flex";
+        csvTableContainer.style.display = "block";
+        document.head.innerHTML = originalHead;
+      }
+    </script>
+  </body>
+</html>
